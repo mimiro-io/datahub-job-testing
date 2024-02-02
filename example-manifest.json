@@ -1,0 +1,70 @@
+{
+  "common": {
+    "requiredDatasets": [
+      {
+        "name": "sdb.BirthMalformationType",
+        "path": "tests/testdata/common/sdb/sdb-birthmalformationtype.json"
+      },
+      {
+        "name": "cima.BirthMalformationType",
+        "path": "tests/testdata/common/cima/cima-birthmalformationtype.json"
+      },
+      {
+        "name": "sdb.BirthSizeType",
+        "path": "tests/testdata/common/sdb/sdb-birthsizetype.json"
+      },
+      {
+        "name": "cima.BirthSizeType",
+        "path": "tests/testdata/common/cima/cima-birthsizetype.json"
+      },
+      {
+        "name": "sdb.HornBudType",
+        "path": "tests/testdata/common/sdb/sdb-hornbudtype.json"
+      },
+      {
+        "name": "cima.HornBudType",
+        "path": "tests/testdata/common/cima/cima-hornbudtype.json"
+      }
+    ]
+  },
+  "variablesPath": "environments/variables-dev.json",
+  "tests": [
+    {
+      "name": "cima-animalbirthevent: New born calf",
+      "description": "Check all the data for a new born calf",
+      "includeCommon": true,
+      "jobPath": "jobs/cima/cima-animalbirthevent.json",
+      "requiredDatasets": [
+        {
+          "name": "sdb.Animal",
+          "path": "tests/testdata/sdb/Animal.json"
+        },
+        {
+          "name": "sdb.AnimalHistory",
+          "path": "tests/testdata/sdb/AnimalHistory.json"
+        },
+        {
+          "name": "sdb.BirthInfo",
+          "path": "tests/testdata/sdb/BirthInfo.json"
+        },
+        {
+          "name": "sdb.Calf",
+          "path": "tests/testdata/sdb/Calf.json"
+        },
+        {
+          "name": "sdb.Parturition",
+          "path": "tests/testdata/sdb/Parturition.json"
+        },
+        {
+          "name": "cima.Cattle",
+          "path": "tests/testdata/cima/Cattle.json"
+        },
+        {
+          "name": "cima.Production",
+          "path": "tests/testdata/cima/Production.json"
+        }
+      ],
+      "expectedOutput": "tests/expected/cima-animalbirthevent/case1.json"
+    }
+  ]
+}
