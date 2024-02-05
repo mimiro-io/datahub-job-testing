@@ -5,13 +5,18 @@ import (
 	"github.com/mimiro-io/datahub-job-testing/app/jobs"
 	"github.com/mimiro-io/datahub-job-testing/app/testing"
 	"log"
+	"os"
 )
 
 func main() {
 
+	args := os.Args[1:]
+	if len(args) == 0 {
+		log.Fatal("Pleas provide the path to your manifest file")
+	}
+
 	// Read manifest
-	manifestPath := "/Users/andebor/mimiro/datahub-config/tests/manifest.json" // Todo: make this a flag
-	manifestManager := testing.NewManifestManager(manifestPath)
+	manifestManager := testing.NewManifestManager(args[0])
 
 	successful := true
 	for _, test := range manifestManager.Manifest.Tests {
@@ -106,6 +111,6 @@ func main() {
 	if successful {
 		log.Printf("All tests ran successfully!")
 	} else {
-		log.Printf("Finished running tests. One or more tests failed")
+		log.Fatalf("Finished running tests. One or more tests failed")
 	}
 }
