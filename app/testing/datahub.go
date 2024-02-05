@@ -1,18 +1,34 @@
 package testing
 
 import (
+	"context"
 	dh "github.com/mimiro-io/datahub"
+	"os"
 )
 
-func StartTestDatahub(location string, port string) (*dh.DatahubInstance, error) {
+type DatahubManager struct {
+	Instance *dh.DatahubInstance
+	Location string
+}
+
+func StartTestDatahub(port string) (*DatahubManager, error) {
+
+	tmpDir, err := os.MkdirTemp("", "datahub-jobs-testing-")
+	if err != nil {
+		panic(err)
+	}
+
+	// create store and security folders
+	os.MkdirAll(tmpDir+"/store", 0777)
+	os.MkdirAll(tmpDir+"/security", 0777)
 
 	cfg, err := dh.LoadConfig("")
 	if err != nil {
 		return nil, err
 	}
 	cfg.Port = port
-	cfg.StoreLocation = location + "/store"
-	cfg.SecurityStorageLocation = location + "/security"
+	cfg.StoreLocation = tmpDir + "/store"
+	cfg.SecurityStorageLocation = tmpDir + "/security"
 
 	dhi, err := dh.NewDatahubInstance(cfg)
 	if err != nil {
@@ -20,5 +36,10 @@ func StartTestDatahub(location string, port string) (*dh.DatahubInstance, error)
 	}
 	go dhi.Start()
 
-	return dhi, err
+	return &DatahubManager{Instance: dhi, Location: tmpDir}, nil
+}
+
+func (dm *DatahubManager) Cleanup() {
+	dm.Instance.Stop(context.Background())
+	os.RemoveAll(dm.Location)
 }

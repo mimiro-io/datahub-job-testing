@@ -13,6 +13,7 @@ type Manifest struct {
 }
 
 type Test struct {
+	Id               string          `json:"id"`
 	Name             string          `json:"name"`
 	Description      string          `json:"description,omitempty"`
 	IncludeCommon    bool            `json:"includeCommon,omitempty"`

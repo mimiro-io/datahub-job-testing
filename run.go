@@ -1,13 +1,10 @@
 package main
 
 import (
-	"context"
-	"fmt"
 	"github.com/mimiro-io/datahub-client-sdk-go"
 	"github.com/mimiro-io/datahub-job-testing/app/jobs"
 	"github.com/mimiro-io/datahub-job-testing/app/testing"
 	"log"
-	"os"
 )
 
 func main() {
@@ -16,81 +13,99 @@ func main() {
 	manifestPath := "/Users/andebor/mimiro/datahub-config/tests/manifest.json" // Todo: make this a flag
 	manifestManager := testing.NewManifestManager(manifestPath)
 
+	successful := true
 	for _, test := range manifestManager.Manifest.Tests {
 		// Read jobs config
 		job, err := testing.ReadJobConfig(manifestManager.ProjectRoot, test.JobPath, manifestManager.Variables)
 		if err != nil {
-			panic(err)
+			log.Print(err)
+			continue
 		}
-		fmt.Println(job)
-
-		// Start datahub instance
-		tmpDir, err := os.MkdirTemp("", "datahub-jobs-testing-")
-		if err != nil {
-			panic(err)
-		}
-
-		// create store and security folders
-		os.MkdirAll(tmpDir+"/store", 0777)
-		os.MkdirAll(tmpDir+"/security", 0777)
 
 		// startup data hub instance
-		dhi, err := testing.StartTestDatahub(tmpDir, "10778")
+		dm, err := testing.StartTestDatahub("10778")
 		if err != nil {
-			panic(err)
+			log.Printf("failed to start test datahub for test %s: %s", test.Id, err)
+			continue
 		}
-		fmt.Print(dhi)
 
 		// create client
 		client, err := datahub.NewClient("http://localhost:10778")
 		if err != nil {
-			panic(err)
+			dm.Cleanup()
+			log.Printf("failed to create datahub client for test %s: %s", test.Id, err)
+			continue
 		}
 
 		// upload required datasets
 		for _, dataset := range test.RequiredDatasets {
-			testing.LoadEntities(dataset, client)
+			err := testing.LoadEntities(dataset, client)
+			if err != nil {
+				dm.Cleanup()
+				log.Printf("failed to load required dataset %s for test %s: %s", dataset.Name, test.Id, err)
+				continue
+			}
 		}
 
 		if test.IncludeCommon && manifestManager.Manifest.Common.RequiredDatasets != nil {
 			for _, dataset := range manifestManager.Manifest.Common.RequiredDatasets {
-				testing.LoadEntities(dataset, client)
+				err := testing.LoadEntities(dataset, client)
+				if err != nil {
+					dm.Cleanup()
+					log.Printf("failed to load required dataset %s for test %s: %s", dataset.Name, test.Id, err)
+					continue
+				}
 			}
 		}
 
 		// upload job
 		err = client.AddJob(job)
 		if err != nil {
-			panic(err)
+			dm.Cleanup()
+			log.Printf("failed to upload job for test %s: %s", test.Id, err)
+			continue
 		}
 
 		// Create job sink dataset
 		err = client.AddDataset(job.Sink["Name"].(string), nil)
 		if err != nil {
-			panic(err)
+			dm.Cleanup()
+			log.Printf("failed to create sink dataset for test %s: %s", test.Id, err)
+			continue
 		}
 
 		// run job
 		err = jobs.RunAndWait(client, job.Id)
 		if err != nil {
-			panic(err)
+			dm.Cleanup()
+			log.Printf("failed to run job for test %s: %s", test.Id, err)
+			continue
 		}
 
 		// compare output
 		entities, err := client.GetEntities(job.Sink["Name"].(string), "", 0, false, true)
 		if err != nil {
-			panic(err)
+			dm.Cleanup()
+			log.Printf("failed to get entities from sink dataset for test %s: %s", test.Id, err)
+			continue
 		}
 
-		expected := testing.ReadEntities(test.ExpectedOutput)
-
-		dhi.Stop(context.Background()) // TODO: Should run this before exiting on panics
-		os.RemoveAll(tmpDir)
-
-		if !testing.CompareEntities(expected, entities) {
-			log.Printf("One or more entities does not match expected output")
+		expected, err := testing.ReadEntities(test.ExpectedOutput)
+		if err != nil {
+			dm.Cleanup()
+			log.Printf("failed to read expected output for test %s: %s", test.Id, err)
+			continue
 		}
+
+		if !testing.CompareEntities(expected, entities, test.Id) {
+			successful = false
+		}
+		dm.Cleanup()
 
 	}
-	log.Printf("Finished running tests!")
+	if successful {
+		log.Printf("All tests ran successfully!")
+	} else {
+		log.Printf("Finished running tests. One or more tests failed")
+	}
 }
