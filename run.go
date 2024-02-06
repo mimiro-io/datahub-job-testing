@@ -4,6 +4,8 @@ import (
 	"github.com/mimiro-io/datahub-client-sdk-go"
 	"github.com/mimiro-io/datahub-job-testing/app/jobs"
 	"github.com/mimiro-io/datahub-job-testing/app/testing"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 	"log"
 	"os"
 )
@@ -102,15 +104,32 @@ func main() {
 			continue
 		}
 
-		if !testing.CompareEntities(expected, entities, test.Id) {
-			successful = false
-		}
 		dm.Cleanup()
 
+		equal, diffs := testing.CompareEntities(expected, entities)
+		if !equal {
+			successful = false
+			log.Printf("Listing diffs for test %s", test.Id)
+			LogDiffs(diffs, test.Id)
+		}
 	}
 	if successful {
 		log.Printf("All tests ran successfully!")
 	} else {
 		log.Fatalf("Finished running tests. One or more tests failed")
 	}
+}
+
+func LogDiffs(diffs []testing.Diff, label string) {
+	for _, diff := range diffs {
+		caser := cases.Title(language.English)
+		log.Printf("%s - %s: Key: %s ExpectedValue: %s ResultValue: %s ValueType: %s",
+			label,
+			caser.String(diff.Type),
+			diff.Key,
+			diff.ExpectedValue,
+			diff.ResultValue,
+			diff.ValueType)
+	}
+
 }
