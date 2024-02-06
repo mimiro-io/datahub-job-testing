@@ -20,8 +20,19 @@ func main() {
 	// Read manifest
 	manifestManager := testing.NewManifestManager(args[0])
 
+	var singleTest string
+	if len(args) > 1 {
+		singleTest = args[1]
+	}
+
 	successful := true
+	ranTests := 0
+
 	for _, test := range manifestManager.Manifest.Tests {
+		if singleTest != "" && test.Id != singleTest {
+			continue
+		}
+
 		// Read jobs config
 		job, err := testing.ReadJobConfig(manifestManager.ProjectRoot, test.JobPath, manifestManager.Variables)
 		if err != nil {
@@ -112,11 +123,15 @@ func main() {
 			log.Printf("Listing diffs for test %s", test.Id)
 			LogDiffs(diffs, test.Id)
 		}
+		ranTests++
+	}
+	if ranTests == 0 && singleTest != "" {
+		log.Fatalf("No test found with id %s", singleTest)
 	}
 	if successful {
-		log.Printf("All tests ran successfully!")
+		log.Printf("All %d tests ran successfully!", ranTests)
 	} else {
-		log.Fatalf("Finished running tests. One or more tests failed")
+		log.Fatalf("Finished running %d tests. One or more tests failed", ranTests)
 	}
 }
 
