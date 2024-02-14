@@ -30,6 +30,7 @@
   "variablesPath": "environments/variables-dev.json",
   "tests": [
     {
+      "id": "test1",
       "name": "cima-animalbirthevent: New born calf",
       "description": "Check all the data for a new born calf",
       "includeCommon": true,

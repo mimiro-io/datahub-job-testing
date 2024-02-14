@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"github.com/mimiro-io/datahub-client-sdk-go"
 	"github.com/mimiro-io/datahub-job-testing/app/jobs"
 	"github.com/mimiro-io/datahub-job-testing/app/testing"
@@ -10,31 +11,62 @@ import (
 	"os"
 )
 
+type TestRunner struct {
+	ManifestManager *testing.ManifestManager
+}
+
+func NewTestRunner(manifestPath string) *TestRunner {
+	return &TestRunner{
+		ManifestManager: testing.NewManifestManager(manifestPath),
+	}
+}
+
+func (tr *TestRunner) RunSingleTest(testId string) {
+	tr.runTests(testId)
+}
+
+func (tr *TestRunner) RunAllTests() {
+	tr.runTests("")
+}
+
 func main() {
+
+	usage := `
+Usage:
+  djt path/to/manifest.json [test_id]
+
+Help:
+  https://github.com/mimiro-io/datahub-job-testing
+`
 
 	args := os.Args[1:]
 	if len(args) == 0 {
-		log.Fatal("Pleas provide the path to your manifest file")
+		fmt.Print(usage)
+		os.Exit(1)
 	}
 
-	// Read manifest
-	manifestManager := testing.NewManifestManager(args[0])
+	tr := NewTestRunner(args[0])
 
 	var singleTest string
 	if len(args) > 1 {
 		singleTest = args[1]
+		tr.RunSingleTest(singleTest)
+	} else {
+		tr.RunAllTests()
 	}
+}
 
+func (tr *TestRunner) runTests(testId string) {
 	successful := true
 	ranTests := 0
 
-	for _, test := range manifestManager.Manifest.Tests {
-		if singleTest != "" && test.Id != singleTest {
+	for _, test := range tr.ManifestManager.Manifest.Tests {
+		if testId != "" && test.Id != testId {
 			continue
 		}
 
 		// Read jobs config
-		job, err := testing.ReadJobConfig(manifestManager.ProjectRoot, test.JobPath, manifestManager.Variables)
+		job, err := testing.ReadJobConfig(tr.ManifestManager.ProjectRoot, test.JobPath, tr.ManifestManager.Variables)
 		if err != nil {
 			log.Print(err)
 			continue
@@ -65,8 +97,8 @@ func main() {
 			}
 		}
 
-		if test.IncludeCommon && manifestManager.Manifest.Common.RequiredDatasets != nil {
-			for _, dataset := range manifestManager.Manifest.Common.RequiredDatasets {
+		if test.IncludeCommon && tr.ManifestManager.Manifest.Common.RequiredDatasets != nil {
+			for _, dataset := range tr.ManifestManager.Manifest.Common.RequiredDatasets {
 				err := testing.LoadEntities(dataset, client)
 				if err != nil {
 					dm.Cleanup()
@@ -121,12 +153,12 @@ func main() {
 		if !equal {
 			successful = false
 			log.Printf("Listing diffs for test %s", test.Id)
-			LogDiffs(diffs, test.Id)
+			logDiffs(diffs, test.Id)
 		}
 		ranTests++
 	}
-	if ranTests == 0 && singleTest != "" {
-		log.Fatalf("No test found with id %s", singleTest)
+	if ranTests == 0 && testId != "" {
+		log.Fatalf("No test found with id %s", testId)
 	}
 	if successful {
 		log.Printf("All %d tests ran successfully!", ranTests)
@@ -135,7 +167,7 @@ func main() {
 	}
 }
 
-func LogDiffs(diffs []testing.Diff, label string) {
+func logDiffs(diffs []testing.Diff, label string) {
 	for _, diff := range diffs {
 		caser := cases.Title(language.English)
 		log.Printf("%s - %s: Key: %s ExpectedValue: %s ResultValue: %s ValueType: %s",
