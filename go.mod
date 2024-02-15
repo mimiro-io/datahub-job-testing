@@ -6,8 +6,11 @@ toolchain go1.21.6
 
 require (
 	github.com/evanw/esbuild v0.20.0
+	github.com/labstack/gommon v0.4.0
 	github.com/mimiro-io/datahub v1.8.4
 	github.com/mimiro-io/datahub-client-sdk-go v0.1.1
+	github.com/mimiro-io/entity-graph-data-model v0.7.4
+	golang.org/x/text v0.13.0
 )
 
 require (
@@ -42,7 +45,6 @@ require (
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/klauspost/compress v1.17.2 // indirect
 	github.com/labstack/echo/v4 v4.11.2 // indirect
-	github.com/labstack/gommon v0.4.0 // indirect
 	github.com/lestrrat-go/blackmagic v1.0.2 // indirect
 	github.com/lestrrat-go/httpcc v1.0.1 // indirect
 	github.com/lestrrat-go/httprc v1.0.4 // indirect
@@ -52,7 +54,6 @@ require (
 	github.com/magiconair/properties v1.8.7 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
-	github.com/mimiro-io/entity-graph-data-model v0.7.4 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/mustafaturan/bus v1.0.2 // indirect
 	github.com/mustafaturan/monoton v1.0.0 // indirect
@@ -83,7 +84,6 @@ require (
 	golang.org/x/oauth2 v0.13.0 // indirect
 	golang.org/x/sync v0.4.0 // indirect
 	golang.org/x/sys v0.13.0 // indirect
-	golang.org/x/text v0.13.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
 	golang.org/x/tools v0.14.0 // indirect
 	google.golang.org/appengine v1.6.8 // indirect

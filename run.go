@@ -1,14 +1,12 @@
-package main
+package datahub_job_testing
 
 import (
-	"fmt"
 	"github.com/mimiro-io/datahub-client-sdk-go"
-	"github.com/mimiro-io/datahub-job-testing/app/jobs"
-	"github.com/mimiro-io/datahub-job-testing/app/testing"
+	"github.com/mimiro-io/datahub-job-testing/jobs"
+	"github.com/mimiro-io/datahub-job-testing/testing"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 	"log"
-	"os"
 )
 
 type TestRunner struct {
@@ -21,42 +19,15 @@ func NewTestRunner(manifestPath string) *TestRunner {
 	}
 }
 
-func (tr *TestRunner) RunSingleTest(testId string) {
-	tr.runTests(testId)
+func (tr *TestRunner) RunSingleTest(testId string) bool {
+	return tr.runTests(testId)
 }
 
-func (tr *TestRunner) RunAllTests() {
-	tr.runTests("")
+func (tr *TestRunner) RunAllTests() bool {
+	return tr.runTests("")
 }
 
-func main() {
-
-	usage := `
-Usage:
-  djt path/to/manifest.json [test_id]
-
-Help:
-  https://github.com/mimiro-io/datahub-job-testing
-`
-
-	args := os.Args[1:]
-	if len(args) == 0 {
-		fmt.Print(usage)
-		os.Exit(1)
-	}
-
-	tr := NewTestRunner(args[0])
-
-	var singleTest string
-	if len(args) > 1 {
-		singleTest = args[1]
-		tr.RunSingleTest(singleTest)
-	} else {
-		tr.RunAllTests()
-	}
-}
-
-func (tr *TestRunner) runTests(testId string) {
+func (tr *TestRunner) runTests(testId string) bool {
 	successful := true
 	ranTests := 0
 
@@ -159,11 +130,14 @@ func (tr *TestRunner) runTests(testId string) {
 	}
 	if ranTests == 0 && testId != "" {
 		log.Fatalf("No test found with id %s", testId)
+		return false
 	}
 	if successful {
 		log.Printf("All %d tests ran successfully!", ranTests)
+		return true
 	} else {
 		log.Fatalf("Finished running %d tests. One or more tests failed", ranTests)
+		return false
 	}
 }
 

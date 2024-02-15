@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/mimiro-io/datahub-client-sdk-go"
-	"github.com/mimiro-io/datahub-job-testing/app/jobs"
+	"github.com/mimiro-io/datahub-job-testing/jobs"
 	"os"
 	"os/exec"
 	"path/filepath"
