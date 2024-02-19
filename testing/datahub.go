@@ -42,4 +42,5 @@ func StartTestDatahub(port string) (*DatahubManager, error) {
 func (dm *DatahubManager) Cleanup() {
 	dm.Instance.Stop(context.Background())
 	os.RemoveAll(dm.Location)
+	os.Unsetenv("LOG_LEVEL")
 }

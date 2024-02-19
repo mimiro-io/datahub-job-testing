@@ -6,7 +6,32 @@ This is a simple test runner for datahub jobs. It is designed to be used in a CI
 This tool expects a manifest file to be present inside your datahub config project. The manifest file should contain a list of tests to run. 
 For each test, the runner will spin up a new datahub, upload the defined required datasets, and run the job. It will then compare the output with the expected output.
 
-#### Test configuration
+#### With CLI
+```bash
+djt path/to/manifest.json
+```
+
+#### Import as a module
+```go
+package tests
+
+import (
+    ...
+    djt "github.com/mimiro-io/datahub-job-testing"
+)
+
+func TestMyJob(t *testing.T) {
+    ...
+    manifest := "path/to/manifest.json"
+    tr := djt.NewTestRunner(manifest)
+    if ! tr.RunAllTests() {
+		// tests didn't pass
+    }
+    ...
+}
+```
+
+### Test configuration
 Each test case defined has the following properties:
 ```json
 
@@ -31,28 +56,3 @@ Each test case defined has the following properties:
 Some configuration is common to all tests. To add datasets for all test cases, use the top-level property `common.requiredDatasets`. (See [example manifest](example-manifest.json) for details.)
 
 
-
-
-
-## TODO:
-- [x] Create test manifest
-    * Test name
-        * jobtitle.js
-        * tags
-        * sink dataset
-        * source dataset
-        * required datasets
-            * where is the data stored
-        * description
-        * expected output location
-
-- [x] Load manifest
-- [ ] find all .ts transforms
-    * copy into separate ts dir
-    * compile them somehow
-- [x] iterate through list of tests
-- [x] spin up datahub for each
-- [x] load required datasets
-- [x] build job with sdk and run it
-- [x] compare output with expected
-- [ ] run egcl on the output (secondary)

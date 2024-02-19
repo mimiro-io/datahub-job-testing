@@ -31,20 +31,13 @@ type StoredDataset struct {
 	Path string `json:"path"`
 }
 
-type Job struct {
-	Title         string   `json:"title,omitempty"`
-	Tags          []string `json:"tags,omitempty"`
-	SourceDataset string   `json:"sourceDataset,omitempty"`
-	SinkDataset   string   `json:"sinkDataset,omitempty"`
-	Transform     string   `json:"transform,omitempty"`
-}
-
 type ManifestManager struct {
 	Manifest    *Manifest
 	ProjectRoot string
 	Variables   map[string]any
 }
 
+// NewManifestManager creates a new ManifestManager from the given manifest file path
 func NewManifestManager(path string) *ManifestManager {
 	projectRoot := getGitRootPath(filepath.Dir(path))
 	manifest := parseManifest(path)
