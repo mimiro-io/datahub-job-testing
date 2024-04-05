@@ -20,17 +20,19 @@ func NewTestRunner(manifestPath string) *TestRunner {
 	}
 }
 
-func (tr *TestRunner) RunSingleTest(testId string) bool {
+func (tr *TestRunner) RunSingleTest(testId string) ([]testing.Diff, bool) {
 	return tr.runTests(testId)
 }
 
 func (tr *TestRunner) RunAllTests() bool {
-	return tr.runTests("")
+	_, success := tr.runTests("")
+	return success
 }
 
-func (tr *TestRunner) runTests(testId string) bool {
-	successful := true
+func (tr *TestRunner) runTests(testId string) ([]testing.Diff, bool) {
+	successfulCount := 0
 	startedTests := 0
+	var diffs []testing.Diff
 
 	for _, test := range tr.Manifest.Tests {
 		if testId != "" && test.Id != testId {
@@ -107,7 +109,6 @@ func (tr *TestRunner) runTests(testId string) bool {
 			continue
 		}
 		if len(entities.GetEntities()) == 0 {
-			successful = false
 			dm.Cleanup()
 			log.Printf("No entities found in sink dataset for test %s", test.Id)
 			continue
@@ -116,29 +117,32 @@ func (tr *TestRunner) runTests(testId string) bool {
 
 		dm.Cleanup()
 
-		equal, diffs := testing.CompareEntities(test.ExpectedOutput, entities)
+		equal, entityDiff := testing.CompareEntities(test.ExpectedOutput, entities)
 		if !equal {
-			successful = false
+			diffs = append(diffs, entityDiff...)
 			log.Printf("Listing diffs for test %s", test.Id)
 			logDiffs(diffs, test.Id)
+		} else {
+			successfulCount++
 		}
 	}
 	if startedTests == 0 && testId != "" {
 		log.Fatalf("No test found with id %s", testId)
-		return false
+		return nil, false
 	}
-	if successful {
+	if successfulCount == startedTests {
 		log.Printf("All %d tests ran successfully!", startedTests)
-		return true
+		return nil, true
 	} else {
 		log.Printf("Finished running %d tests. One or more tests failed", startedTests)
-		return false
+		return diffs, false
 	}
 }
 
 func (tr *TestRunner) DetermineRequiredDatasets(testId string) ([]*testing.StoredDataset, error) {
 	var usedDatasets []*testing.StoredDataset
 	var success bool
+	var diffs []testing.Diff
 	test := tr.Manifest.GetTest(testId)
 	if test == nil {
 		return nil, fmt.Errorf("no test found with id %s", testId)
@@ -150,7 +154,20 @@ func (tr *TestRunner) DetermineRequiredDatasets(testId string) ([]*testing.Store
 		for _, newDataset := range usedDatasets {
 			tr.Manifest.GetTest(testId).AddRequiredDataset(newDataset)
 		}
-		success = tr.runTests(testId)
+		diffs, success = tr.runTests(testId)
+		// Check if diff is only additional entities
+		if !success && len(diffs) > 0 {
+			onlyExtra := 0
+			for _, diff := range diffs {
+				if diff.Type == "extra" && diff.ValueType == "entity" {
+					onlyExtra++
+				}
+			}
+			if onlyExtra == len(diffs) {
+				success = true
+				log.Printf("Only additional entities found in diff. No more required datasets")
+			}
+		}
 		testRuns++
 		if success {
 			break
