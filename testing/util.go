@@ -23,7 +23,7 @@ func getGitRootPath(path string) string {
 
 // ReadJobConfig takes a path to a jobs config file and returns a datahub.Job struct
 func ReadJobConfig(projectRoot string, jobPath string, variables map[string]any) (*datahub.Job, error) {
-	bytes, err := os.ReadFile(jobPath)
+	bytes, err := os.ReadFile(filepath.Join(projectRoot, jobPath))
 	if err != nil {
 		return nil, fmt.Errorf("failed to read jobs config in path '%s': %s", jobPath, err)
 	}

@@ -10,6 +10,7 @@ require (
 	github.com/mimiro-io/datahub v1.8.4
 	github.com/mimiro-io/datahub-client-sdk-go v0.1.1
 	github.com/mimiro-io/entity-graph-data-model v0.7.4
+	github.com/mxschmitt/golang-combinations v1.2.0
 	golang.org/x/text v0.13.0
 )
 

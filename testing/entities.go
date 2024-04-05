@@ -8,20 +8,15 @@ import (
 )
 
 // LoadEntities loads entities from file path and upload to the given datahub dataset
-func LoadEntities(dataset StoredDataset, client *datahub.Client) error {
-	entities, err := ReadEntities(dataset.Path)
-	if err != nil {
-		return err
-	}
-
+func LoadEntities(dataset *StoredDataset, client *datahub.Client) error {
 	// create dataset
-	err = client.AddDataset(dataset.Name, nil)
+	err := client.AddDataset(dataset.Name, nil)
 	if err != nil {
 		return err
 	}
 
 	// upload entities
-	err = client.StoreEntities(dataset.Name, entities)
+	err = client.StoreEntities(dataset.Name, dataset.EntityCollection)
 	if err != nil {
 		return err
 

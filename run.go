@@ -1,6 +1,7 @@
 package datahub_job_testing
 
 import (
+	"fmt"
 	"github.com/mimiro-io/datahub-client-sdk-go"
 	"github.com/mimiro-io/datahub-job-testing/jobs"
 	"github.com/mimiro-io/datahub-job-testing/testing"
@@ -10,12 +11,12 @@ import (
 )
 
 type TestRunner struct {
-	ManifestManager *testing.ManifestManager
+	Manifest *testing.Manifest
 }
 
 func NewTestRunner(manifestPath string) *TestRunner {
 	return &TestRunner{
-		ManifestManager: testing.NewManifestManager(manifestPath),
+		Manifest: testing.LoadManifest(manifestPath),
 	}
 }
 
@@ -29,19 +30,14 @@ func (tr *TestRunner) RunAllTests() bool {
 
 func (tr *TestRunner) runTests(testId string) bool {
 	successful := true
-	ranTests := 0
+	startedTests := 0
 
-	for _, test := range tr.ManifestManager.Manifest.Tests {
+	for _, test := range tr.Manifest.Tests {
 		if testId != "" && test.Id != testId {
 			continue
 		}
 
-		// Read jobs config
-		job, err := testing.ReadJobConfig(tr.ManifestManager.ProjectRoot, test.JobPath, tr.ManifestManager.Variables)
-		if err != nil {
-			log.Print(err)
-			continue
-		}
+		startedTests++
 
 		// startup data hub instance
 		dm, err := testing.StartTestDatahub("10778")
@@ -68,8 +64,8 @@ func (tr *TestRunner) runTests(testId string) bool {
 			}
 		}
 
-		if test.IncludeCommon && tr.ManifestManager.Manifest.Common.RequiredDatasets != nil {
-			for _, dataset := range tr.ManifestManager.Manifest.Common.RequiredDatasets {
+		if test.IncludeCommon && tr.Manifest.Common.RequiredDatasets != nil {
+			for _, dataset := range tr.Manifest.Common.RequiredDatasets {
 				err := testing.LoadEntities(dataset, client)
 				if err != nil {
 					dm.Cleanup()
@@ -80,7 +76,7 @@ func (tr *TestRunner) runTests(testId string) bool {
 		}
 
 		// upload job
-		err = client.AddJob(job)
+		err = client.AddJob(test.Job)
 		if err != nil {
 			dm.Cleanup()
 			log.Printf("failed to upload job for test %s: %s", test.Id, err)
@@ -88,7 +84,7 @@ func (tr *TestRunner) runTests(testId string) bool {
 		}
 
 		// Create job sink dataset
-		err = client.AddDataset(job.Sink["Name"].(string), nil)
+		err = client.AddDataset(test.Job.Sink["Name"].(string), nil)
 		if err != nil {
 			dm.Cleanup()
 			log.Printf("failed to create sink dataset for test %s: %s", test.Id, err)
@@ -96,7 +92,7 @@ func (tr *TestRunner) runTests(testId string) bool {
 		}
 
 		// run job
-		err = jobs.RunAndWait(client, job.Id)
+		err = jobs.RunAndWait(client, test.Job.Id)
 		if err != nil {
 			dm.Cleanup()
 			log.Printf("failed to run job for test %s: %s", test.Id, err)
@@ -104,41 +100,67 @@ func (tr *TestRunner) runTests(testId string) bool {
 		}
 
 		// compare output
-		entities, err := client.GetEntities(job.Sink["Name"].(string), "", 0, false, true)
+		entities, err := client.GetEntities(test.Job.Sink["Name"].(string), "", 0, false, true)
 		if err != nil {
 			dm.Cleanup()
 			log.Printf("failed to get entities from sink dataset for test %s: %s", test.Id, err)
 			continue
 		}
-
-		expected, err := testing.ReadEntities(test.ExpectedOutput)
-		if err != nil {
+		if len(entities.GetEntities()) == 0 {
+			successful = false
 			dm.Cleanup()
-			log.Printf("failed to read expected output for test %s: %s", test.Id, err)
+			log.Printf("No entities found in sink dataset for test %s", test.Id)
 			continue
 		}
+		log.Printf("Found %d entities in sink dataset for test %s", len(entities.GetEntities()), test.Id)
 
 		dm.Cleanup()
 
-		equal, diffs := testing.CompareEntities(expected, entities)
+		equal, diffs := testing.CompareEntities(test.ExpectedOutput, entities)
 		if !equal {
 			successful = false
 			log.Printf("Listing diffs for test %s", test.Id)
 			logDiffs(diffs, test.Id)
 		}
-		ranTests++
 	}
-	if ranTests == 0 && testId != "" {
+	if startedTests == 0 && testId != "" {
 		log.Fatalf("No test found with id %s", testId)
 		return false
 	}
 	if successful {
-		log.Printf("All %d tests ran successfully!", ranTests)
+		log.Printf("All %d tests ran successfully!", startedTests)
 		return true
 	} else {
-		log.Fatalf("Finished running %d tests. One or more tests failed", ranTests)
+		log.Printf("Finished running %d tests. One or more tests failed", startedTests)
 		return false
 	}
+}
+
+func (tr *TestRunner) DetermineRequiredDatasets(testId string) ([]*testing.StoredDataset, error) {
+	var usedDatasets []*testing.StoredDataset
+	var success bool
+	test := tr.Manifest.GetTest(testId)
+	if test == nil {
+		return nil, fmt.Errorf("no test found with id %s", testId)
+	}
+	testRuns := 0
+	for _, dataset := range test.RequiredDatasets {
+		usedDatasets = append(usedDatasets, dataset)
+		tr.Manifest.GetTest(testId).RemoveAllRequiredDatasets()
+		for _, newDataset := range usedDatasets {
+			tr.Manifest.GetTest(testId).AddRequiredDataset(newDataset)
+		}
+		success = tr.runTests(testId)
+		testRuns++
+		if success {
+			break
+		}
+	}
+	if !success {
+		return nil, fmt.Errorf("unable to determine required datasets for test %s after %d test runs: No successful runs with collected data", testId, testRuns)
+
+	}
+	return usedDatasets, nil
 }
 
 func logDiffs(diffs []testing.Diff, label string) {

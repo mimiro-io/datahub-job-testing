@@ -22,6 +22,8 @@ func StartTestDatahub(port string) (*DatahubManager, error) {
 	os.MkdirAll(tmpDir+"/store", 0777)
 	os.MkdirAll(tmpDir+"/security", 0777)
 
+	os.Setenv("LOG_LEVEL", "debug")
+
 	cfg, err := dh.LoadConfig("")
 	if err != nil {
 		return nil, err
