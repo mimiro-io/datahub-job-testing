@@ -150,6 +150,7 @@ func (tr *TestRunner) DetermineRequiredDatasets(testId string) ([]*testing.Store
 	testRuns := 0
 	for _, dataset := range test.RequiredDatasets {
 		usedDatasets = append(usedDatasets, dataset)
+		log.Printf("Running test with dataset(s): %s", usedDatasets)
 		tr.Manifest.GetTest(testId).RemoveAllRequiredDatasets()
 		for _, newDataset := range usedDatasets {
 			tr.Manifest.GetTest(testId).AddRequiredDataset(newDataset)

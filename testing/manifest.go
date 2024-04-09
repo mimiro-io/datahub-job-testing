@@ -38,6 +38,10 @@ type StoredDataset struct {
 	EntityCollection *egdm.EntityCollection `json:"-"`
 }
 
+func (sd StoredDataset) String() string {
+	return sd.Name
+}
+
 func (t *Test) AddRequiredDataset(dataset *StoredDataset) {
 	t.RequiredDatasets = append(t.RequiredDatasets, dataset)
 }
