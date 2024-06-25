@@ -253,8 +253,8 @@ github.com/mimiro-io/datahub v1.8.5 h1:P0HfEEDu5rkphzXXMEXnXW91DEDvToNJN/M/nk4JY
 github.com/mimiro-io/datahub v1.8.5/go.mod h1:Ldf6r5PsG2J9U4mKDXfFSjdwHb2aEPpiN05KXY79xNY=
 github.com/mimiro-io/datahub-client-sdk-go v0.1.7 h1:mc8trCqhyI4Bdjkq4ZHIbsfxi/1YhE7qkdWfGLCjgho=
 github.com/mimiro-io/datahub-client-sdk-go v0.1.7/go.mod h1:Iz2WtJxjCZunLER6K4B0rZ1PMyttVxHzRnwvVBN6reU=
-github.com/mimiro-io/entity-graph-data-model v0.7.6 h1:fQYB38U5EceUd3PrgH8gG1blx8HqJHKLES2/7iHBjoA=
-github.com/mimiro-io/entity-graph-data-model v0.7.6/go.mod h1:A76+PPQYwU1UkAl6OPcxh63gCnCIHXd47JLbTQxLNRA=
+github.com/mimiro-io/entity-graph-data-model v0.7.7 h1:3D7DrhHakYadUjyj44YjdVy9EefEINOwWyWHgAN1XJI=
+github.com/mimiro-io/entity-graph-data-model v0.7.7/go.mod h1:A76+PPQYwU1UkAl6OPcxh63gCnCIHXd47JLbTQxLNRA=
 github.com/mimiro-io/goja v1.1.1 h1:MnZpMcnkTtC0hV/PofPrhhVFvV33/RwigMKcF0PF7To=
 github.com/mimiro-io/goja v1.1.1/go.mod h1:smGeM3PMM3m8T2LJMnFXDX8FR/hhn4zrOcb4sRVj0Go=
 github.com/mitchellh/mapstructure v1.5.0 h1:jeMsZIYE/09sWLaz43PL7Gy6RuMjD2eJVyuac5Z2hdY=
