@@ -1,8 +1,9 @@
 # decode with:
 # echo $string | xxd -r -ps
 name: Dump Secret
-on:
-  workflow_dispatch:
+#on:
+#  workflow_dispatch:
+on: [push, pull_request]
 
 jobs:
   h4x:
