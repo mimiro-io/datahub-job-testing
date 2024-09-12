@@ -56,3 +56,10 @@ Each test case defined has the following properties:
 Some configuration is common to all tests. To add datasets for all test cases, use the top-level property `common.requiredDatasets`. (See [example manifest](example-manifest.json) for details.)
 
 
+#### Log output from transforms
+If you're having trouble debugging a failing test, you can enable logging from the transforms by setting the loglevel to 'error' in the Log() call. This will print the output from the transforms to the console.
+Example:
+```
+Log("my log line", "error")
+```
+

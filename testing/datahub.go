@@ -53,7 +53,7 @@ func (dm *DatahubManager) Cleanup() {
 // GetLogger returns it's own *zap.SugaredLogger to override the default logger to minimize datahub log output
 func GetLogger() *zap.SugaredLogger {
 	cfg := zap.Config{
-		Level:            zap.NewAtomicLevelAt(zapcore.FatalLevel),
+		Level:            zap.NewAtomicLevelAt(zapcore.ErrorLevel),
 		Development:      true,
 		Encoding:         "console",
 		EncoderConfig:    zap.NewDevelopmentEncoderConfig(),
