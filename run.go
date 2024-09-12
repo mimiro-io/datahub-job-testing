@@ -8,6 +8,7 @@ import (
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 	"log"
+	"os"
 )
 
 type TestRunner struct {
@@ -51,28 +52,41 @@ func (tr *TestRunner) runTests(testId string) ([]testing.Diff, bool) {
 		// create client
 		client, err := datahub.NewClient("http://localhost:10778")
 		if err != nil {
-			dm.Cleanup()
 			log.Printf("failed to create datahub client for test %s: %s", test.Id, err)
+			dm.Cleanup()
 			continue
 		}
 
 		// upload required datasets
 		for _, dataset := range test.RequiredDatasets {
-			err := testing.LoadEntities(dataset, client)
-			if err != nil {
-				dm.Cleanup()
-				log.Printf("failed to load required dataset %s for test %s: %s", dataset.Name, test.Id, err)
-				continue
+			existInCommon := false
+			if test.IncludeCommon {
+				for _, commonDataset := range tr.Manifest.Common.RequiredDatasets {
+					if dataset.Name == commonDataset.Name {
+						existInCommon = true
+						log.Printf("Required dataset %s found in common datasets. Will not upload", dataset.Name)
+						break
+					}
+				}
 			}
+			if !existInCommon {
+				err := testing.LoadEntities(dataset, client)
+				if err != nil {
+					log.Printf("failed to load required dataset %s for test %s: %s", dataset.Name, test.Id, err)
+					dm.Cleanup()
+					continue
+				}
+			}
+
 		}
 
 		if test.IncludeCommon && tr.Manifest.Common.RequiredDatasets != nil {
 			for _, dataset := range tr.Manifest.Common.RequiredDatasets {
 				err := testing.LoadEntities(dataset, client)
 				if err != nil {
+					log.Printf("failed to load required dataset %s for test %s: %s. Will exit", dataset.Name, test.Id, err)
 					dm.Cleanup()
-					log.Printf("failed to load required dataset %s for test %s: %s", dataset.Name, test.Id, err)
-					continue
+					os.Exit(1)
 				}
 			}
 		}
@@ -80,37 +94,37 @@ func (tr *TestRunner) runTests(testId string) ([]testing.Diff, bool) {
 		// upload job
 		err = client.AddJob(test.Job)
 		if err != nil {
-			dm.Cleanup()
 			log.Printf("failed to upload job for test %s: %s", test.Id, err)
+			dm.Cleanup()
 			continue
 		}
 
 		// Create job sink dataset
 		err = client.AddDataset(test.Job.Sink["Name"].(string), nil)
 		if err != nil {
-			dm.Cleanup()
 			log.Printf("failed to create sink dataset for test %s: %s", test.Id, err)
+			dm.Cleanup()
 			continue
 		}
 
 		// run job
 		err = jobs.RunAndWait(client, test.Job.Id)
 		if err != nil {
-			dm.Cleanup()
 			log.Printf("failed to run job for test %s: %s", test.Id, err)
+			dm.Cleanup()
 			continue
 		}
 
 		// compare output
 		entities, err := client.GetEntities(test.Job.Sink["Name"].(string), "", 0, false, true)
 		if err != nil {
-			dm.Cleanup()
 			log.Printf("failed to get entities from sink dataset for test %s: %s", test.Id, err)
+			dm.Cleanup()
 			continue
 		}
 		if len(entities.GetEntities()) == 0 {
-			dm.Cleanup()
 			log.Printf("No entities found in sink dataset for test %s", test.Id)
+			dm.Cleanup()
 			continue
 		}
 		log.Printf("Found %d entities in sink dataset for test %s", len(entities.GetEntities()), test.Id)
@@ -139,13 +153,17 @@ func (tr *TestRunner) runTests(testId string) ([]testing.Diff, bool) {
 	}
 }
 
-func (tr *TestRunner) DetermineRequiredDatasets(testId string) ([]*testing.StoredDataset, error) {
+func (tr *TestRunner) DetermineRequiredDatasets(testId string, includeCommon bool) ([]*testing.StoredDataset, error) {
 	var usedDatasets []*testing.StoredDataset
 	var success bool
 	var diffs []testing.Diff
 	test := tr.Manifest.GetTest(testId)
 	if test == nil {
 		return nil, fmt.Errorf("no test found with id %s", testId)
+	}
+	test.IncludeCommon = includeCommon
+	if includeCommon {
+		log.Printf("Including common datasets when determining required datasets")
 	}
 	testRuns := 0
 	for _, dataset := range test.RequiredDatasets {
