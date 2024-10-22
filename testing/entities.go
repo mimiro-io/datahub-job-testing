@@ -127,7 +127,7 @@ func findMapDiff(expected, result map[string]any, valueType string) []Diff {
 				ResultValue:   nil,
 				ValueType:     valueType,
 			})
-		} else if val != val2 {
+		} else if !reflect.DeepEqual(val, val2) {
 			// Different value in result
 			diffs = append(diffs, Diff{
 				Type:          "diff",
