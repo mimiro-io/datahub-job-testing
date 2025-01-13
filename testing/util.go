@@ -46,7 +46,7 @@ func ReadJobConfig(projectRoot string, jobPath string, variables map[string]any)
 	}
 
 	if transformPath != "" {
-		code := jobs.GetTransformFromFile(filepath.Join(projectRoot, "transforms", transformPath)) // TODO: make more generic
+		code := jobs.GetTransformFromFile(projectRoot, filepath.Join(projectRoot, "transforms", transformPath)) // TODO: make more generic
 		if code != "" {
 			job.Transform.Code = code
 		}
