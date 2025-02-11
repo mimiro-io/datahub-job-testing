@@ -9,6 +9,7 @@ import (
 	"golang.org/x/text/language"
 	"log"
 	"os"
+	"regexp"
 )
 
 type TestRunner struct {
@@ -88,6 +89,19 @@ func (tr *TestRunner) runTests(testId string) ([]testing.Diff, bool) {
 					dm.Cleanup()
 					os.Exit(1)
 				}
+			}
+		}
+		// if job source dataset is http source, we convert it to regular DatasetSource to run the test without external dependencies
+		if test.Job.Source["Type"].(string) == "HttpDatasetSource" {
+			re := regexp.MustCompile(`datasets/(.+)/(changes|entities)`)
+			matches := re.FindStringSubmatch(test.Job.Source["Url"].(string))
+			if len(matches) > 1 {
+				test.Job.Source["Name"] = matches[1]
+				test.Job.Source["Type"] = "DatasetSource"
+			} else {
+				log.Printf("failed to parse dataset name from http source url: %s", test.Job.Source["Url"])
+				dm.Cleanup()
+				continue
 			}
 		}
 
