@@ -9,7 +9,7 @@ require (
 	github.com/labstack/gommon v0.4.2
 	github.com/mimiro-io/datahub v1.8.5
 	github.com/mimiro-io/datahub-client-sdk-go v0.1.7
-	github.com/mimiro-io/entity-graph-data-model v0.7.7
+	github.com/mimiro-io/entity-graph-data-model v0.7.10
 	go.uber.org/zap v1.27.0
 	golang.org/x/text v0.21.0
 )
