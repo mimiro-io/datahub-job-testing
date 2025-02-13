@@ -2,6 +2,7 @@ package testing
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/labstack/gommon/log"
 	"github.com/mimiro-io/datahub-client-sdk-go"
 	egdm "github.com/mimiro-io/entity-graph-data-model"
@@ -61,8 +62,14 @@ func (t *Test) RemoveAllRequiredDatasets() {
 	t.RequiredDatasets = nil
 }
 
-func (m *Manifest) AddTest(test *Test) {
+func (m *Manifest) AddTest(test *Test) error {
+	for _, t := range m.Tests {
+		if t.Id == test.Id {
+			return fmt.Errorf("test with id %s already exists", test.Id)
+		}
+	}
 	m.Tests = append(m.Tests, test)
+	return nil
 }
 
 func (m *Manifest) RemoveAllTests() {
