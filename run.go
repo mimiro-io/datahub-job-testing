@@ -2,14 +2,16 @@ package datahub_job_testing
 
 import (
 	"fmt"
+	"log"
+	"os"
+	"regexp"
+	"time"
+
 	"github.com/mimiro-io/datahub-client-sdk-go"
 	"github.com/mimiro-io/datahub-job-testing/jobs"
 	"github.com/mimiro-io/datahub-job-testing/testing"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
-	"log"
-	"os"
-	"regexp"
 )
 
 type TestRunner struct {
@@ -35,27 +37,51 @@ func (tr *TestRunner) runTests(testId string) ([]testing.Diff, bool) {
 	successfulCount := 0
 	startedTests := 0
 	var diffs []testing.Diff
+	datahubPort := 10778
+	currentDatahubPort := datahubPort
+	datahubPortRange := 10 // to avoid port conflicts in test runs, we use a range of ports
 
 	for _, test := range tr.Manifest.Tests {
 		if testId != "" && test.Id != testId {
 			continue
 		}
 
+		datahubUrl := fmt.Sprintf("http://localhost:%d", currentDatahubPort)
+
 		startedTests++
 
 		// startup data hub instance
-		dm, err := testing.StartTestDatahub("10778")
+		dm, err := testing.StartTestDatahub(fmt.Sprintf("%d", currentDatahubPort))
 		if err != nil {
 			log.Printf("failed to start test datahub for test %s: %s", test.Id, err)
 			continue
 		}
 
 		// create client
-		client, err := datahub.NewClient("http://localhost:10778")
+		client, err := datahub.NewClient(datahubUrl)
 		if err != nil {
 			log.Printf("failed to create datahub client for test %s: %s", test.Id, err)
 			dm.Cleanup()
 			continue
+		}
+
+		// check if datahub is ready
+		ready := false
+		readyAttempts := 0
+		for ready == false {
+			ready, err = client.IsAlive()
+			if err != nil || !ready {
+				if readyAttempts < 3 {
+					time.Sleep(2 * time.Second)
+					readyAttempts++
+				} else {
+					log.Printf("datahub not ready in time for test %s: %s", test.Id, err)
+					dm.Cleanup()
+					os.Exit(1)
+				}
+			} else {
+				ready = true
+			}
 		}
 
 		// upload required datasets
@@ -153,6 +179,16 @@ func (tr *TestRunner) runTests(testId string) ([]testing.Diff, bool) {
 		} else {
 			successfulCount++
 		}
+
+		// to avoid port conflicts or bind delay in test runs, we increment the port for each test run
+		// and wrap around if we reach the end of the range
+		if currentDatahubPort < datahubPort+datahubPortRange {
+			currentDatahubPort++
+		}
+		if currentDatahubPort == datahubPort+datahubPortRange {
+			currentDatahubPort = datahubPort
+		}
+
 	}
 	if startedTests == 0 && testId != "" {
 		log.Fatalf("No test found with id %s", testId)
