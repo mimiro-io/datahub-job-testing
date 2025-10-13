@@ -3,11 +3,12 @@ package testing
 import (
 	"encoding/json"
 	"fmt"
+	"os"
+	"path/filepath"
+
 	"github.com/labstack/gommon/log"
 	"github.com/mimiro-io/datahub-client-sdk-go"
 	egdm "github.com/mimiro-io/entity-graph-data-model"
-	"os"
-	"path/filepath"
 )
 
 type Manifest struct {
@@ -103,6 +104,7 @@ func LoadManifest(path string) *Manifest {
 		manifest.Common.RequiredDatasets[i].EntityCollection = ec
 	}
 
+	testCount := 0
 	for i, test := range manifest.Tests {
 		job, err := ReadJobConfig(projectRoot, test.JobPath, variables)
 		if err != nil {
@@ -125,7 +127,9 @@ func LoadManifest(path string) *Manifest {
 			continue
 		}
 		manifest.Tests[i].ExpectedOutput = expected
+		testCount++
 	}
+	log.Printf("manifest loaded with %d tests", testCount)
 	return manifest
 }
 
