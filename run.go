@@ -39,7 +39,7 @@ func (tr *TestRunner) runTests(testId string) ([]testing.Diff, bool) {
 	var diffs []testing.Diff
 	datahubPort := 10778
 	currentDatahubPort := datahubPort
-	datahubPortRange := 10 // to avoid port conflicts in parallel test runs, we use a range of ports
+	datahubPortRange := 10 // to avoid port conflicts in test runs, we use a range of ports
 
 	for _, test := range tr.Manifest.Tests {
 		if testId != "" && test.Id != testId {
